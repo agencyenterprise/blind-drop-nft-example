@@ -11,10 +11,10 @@ contract BlindDrop is ERC721, ERC721Enumerable, Ownable {
     using Counters for Counters.Counter;
 
     enum SalePhase {
-		NotStarted,
-		PreSale,
-		PublicSale
-	}
+        NotStarted,
+        PreSale,
+        PublicSale
+    }
 
     Counters.Counter private _tokenIdCounter;
     string private _baseURIValue;
@@ -34,8 +34,8 @@ contract BlindDrop is ERC721, ERC721Enumerable, Ownable {
     }
 
     function changePhase(SalePhase phase) public onlyOwner {
-		_phase = phase;
-	}
+        _phase = phase;
+    }
 
     function setPresaleMerkleRoot(bytes32 root) public onlyOwner {
         _presaleMerkleRoot = root; 

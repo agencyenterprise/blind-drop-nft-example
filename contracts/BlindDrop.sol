@@ -22,6 +22,7 @@ contract BlindDrop is ERC721, ERC721Enumerable, Ownable {
 
     Counters.Counter private _tokenIdCounter;
 
+    string private _contractLevelMetadataURI;
     string public baseURI;
     SalePhase public phase = SalePhase.NotStarted;
     bytes32 public presaleMerkleRoot;
@@ -30,7 +31,8 @@ contract BlindDrop is ERC721, ERC721Enumerable, Ownable {
     uint256 public price = 80000000000000000; //0.08 ETH
     string public provenanceHash = "";
 
-    constructor(string memory _name, string memory _symbol, string memory _provenanceHash, uint256 _maxSupply, uint256 _maxPurchase, uint256 _price) ERC721(_name, _symbol) {
+    constructor(string memory _name, string memory _symbol, string memory _contractLevelMetadataURIValue, string memory _provenanceHash, uint256 _maxSupply, uint256 _maxPurchase, uint256 _price) ERC721(_name, _symbol) {
+        _contractLevelMetadataURI = _contractLevelMetadataURIValue;
         provenanceHash = _provenanceHash;
         maxSupply = _maxSupply;
         maxPurchase = _maxPurchase;
@@ -78,6 +80,10 @@ contract BlindDrop is ERC721, ERC721Enumerable, Ownable {
             _tokenIdCounter.increment();
             _safeMint(msg.sender, tokenId);
         }
+    }
+
+    function contractURI() public view returns (string memory) {
+        return _contractLevelMetadataURI;
     }
 
     function _baseURI() internal view override returns (string memory) {

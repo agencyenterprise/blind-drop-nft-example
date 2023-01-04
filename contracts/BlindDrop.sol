@@ -16,6 +16,10 @@ contract BlindDrop is ERC721, ERC721Enumerable, Ownable {
         PublicSale
     }
 
+    event PhaseChanged(SalePhase previousPhase, SalePhase newPhase);
+    event PresaleMerkleRootChanged(bytes32 previousRoot, bytes32 newRoot);
+    event Revealed(string baseURI);
+
     Counters.Counter private _tokenIdCounter;
     string private _baseURIValue;
     SalePhase private _phase = SalePhase.NotStarted;
@@ -34,14 +38,20 @@ contract BlindDrop is ERC721, ERC721Enumerable, Ownable {
     }
 
     function changePhase(SalePhase phase) public onlyOwner {
+        emit PhaseChanged(_phase, phase);
+
         _phase = phase;
     }
 
     function setPresaleMerkleRoot(bytes32 root) public onlyOwner {
+        emit PresaleMerkleRootChanged(_presaleMerkleRoot, root);
+
         _presaleMerkleRoot = root; 
     }
 
     function reveal(string memory baseURIValue) public onlyOwner {
+        emit Revealed(baseURIValue);
+
         _baseURIValue = baseURIValue;
     }
 

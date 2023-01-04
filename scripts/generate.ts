@@ -35,7 +35,8 @@ async function main() {
   const metadatasPath = path.resolve(basePath, 'metadatas')
   const csvPath = path.resolve(basePath, 'nft.csv')
 
-  const imagesIpfsHash = await uploadDirectoryToIPFS(imagesPath, 'images_test')
+  console.log('Upload images to IPFS...')
+  const imagesIpfsHash = await uploadDirectoryToIPFS(imagesPath, 'images')
 
   const csvFile = fs.readFileSync(csvPath)
   const csvRecords = shuffle(parse(csvFile))
@@ -44,6 +45,7 @@ async function main() {
     fs.mkdirSync(metadatasPath)
   }
 
+  console.log('Building metadata json files and provenance hash...')
   let provenance = ''
 
   for (let i = 0; i < csvRecords.length; i++) {
@@ -53,7 +55,8 @@ async function main() {
     fs.writeFileSync(path.join(metadatasPath, `${i}`), JSON.stringify(metadata))
   }
 
-  const metadatasIpfsHash = await uploadDirectoryToIPFS(metadatasPath, 'metadatas_test')
+  console.log('Upload metadata json files to IPFS...')
+  const metadatasIpfsHash = await uploadDirectoryToIPFS(metadatasPath, 'metadatas')
 
   const provenanceHash = textHash(provenance)
 

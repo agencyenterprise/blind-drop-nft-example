@@ -14,6 +14,10 @@ or
 yarn
 ```
 
+### Set environment variables:
+
+Copy `.env.example` file to a `.env` file and set the environment variables properly
+
 ### Unit tests
 
 The unit tests will help understand the basic usage of this smart contract!  
@@ -25,7 +29,6 @@ npx hardhat test
 
 ### Generate NFT metadata
 
-Update `pinataKey` and `pinataSecret` on file `ipfs.ts`  
 Run this command:
 
 ```shell

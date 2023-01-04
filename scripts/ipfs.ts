@@ -5,8 +5,8 @@ import FormData from 'form-data'
 import streamBuffers from 'stream-buffers'
 
 const pinataApiUrl = 'https://api.pinata.cloud/pinning/pinFileToIPFS'
-const pinataKey = ''
-const pinataSecret = ''
+const pinataKey = process.env.PINATA_KEY
+const pinataSecret = process.env.PINATA_SECRET
 
 const addIPFSPrefix = (hash: string) => `ipfs://${hash}`
 

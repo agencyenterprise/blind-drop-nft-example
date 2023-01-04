@@ -29,6 +29,7 @@ describe('BlindDrop', function () {
       owner,
       otherAccount,
       alice,
+      bob,
       name,
       symbol,
       provenanceHash,
@@ -77,8 +78,8 @@ describe('BlindDrop', function () {
     })
   })
 
-  describe('Presale phase', function () {
-    it('Account not in whitelist should not claim NFTs in presale phase', async function () {
+  describe('PreSale phase', function () {
+    it('Account not in whitelist should not claim NFTs in pre sale phase', async function () {
       // Arrange
       const { nft, otherAccount, presaleMerkleTree } = await loadFixture(deployNftFixture)
       await nft.changePhase(1)
@@ -90,7 +91,7 @@ describe('BlindDrop', function () {
       )
     })
 
-    it('Account in whitelist should claim NFTs in presale phase', async function () {
+    it('Account in whitelist should claim NFTs in pre sale phase', async function () {
       // Arrange
       const { nft, alice, presaleMerkleTree } = await loadFixture(deployNftFixture)
       await nft.changePhase(1)
@@ -101,6 +102,22 @@ describe('BlindDrop', function () {
 
       // Assert
       expect(await nft.balanceOf(alice.address)).to.equal(2n)
+    })
+  })
+
+  describe('PublicSale phase', function () {
+    it('Any account should claim NFTs in public sale phase', async function () {
+      // Arrange
+      const { nft, alice, bob, presaleMerkleTree } = await loadFixture(deployNftFixture)
+      await nft.changePhase(2)
+
+      // Act
+      await expect(nft.connect(alice).claim(2, [], { value: 160000000000000000n })).not.to.be.reverted
+      await expect(nft.connect(bob).claim(2, [], { value: 160000000000000000n })).not.to.be.reverted
+
+      // Assert
+      expect(await nft.balanceOf(alice.address)).to.equal(2n)
+      expect(await nft.balanceOf(bob.address)).to.equal(2n)
     })
   })
 

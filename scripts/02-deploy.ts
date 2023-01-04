@@ -5,8 +5,8 @@ async function main() {
   const name = 'TestDrop'
   const symbol = 'TSD'
   const provenanceHash = 'd48783479c5fcc13fbd28099ef2c060d8394e26d0a58d29be0fbcb35f83444a2'
-  const maxSupply = 20
-  const maxPurchase = 5
+  const maxSupply = 5
+  const maxPurchase = 2
   const priceInWei = '80000000000000000'
 
   console.log('Deploying contract...')

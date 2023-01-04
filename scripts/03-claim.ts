@@ -8,7 +8,7 @@ async function main() {
   const contract = Contract.attach(address!)
 
   await contract.changePhase(2)
-  await contract.claim(3, [], { value: 240000000000000000n })
+  await contract.claim(2, [], { value: 160000000000000000n })
 
   console.log(`NFTs claimed`)
 }

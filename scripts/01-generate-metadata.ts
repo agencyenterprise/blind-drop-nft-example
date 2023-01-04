@@ -3,6 +3,7 @@ import { parse } from 'csv/sync'
 import path from 'path'
 import { imageHash, textHash } from './hash'
 import { uploadDirectoryToIPFS } from './ipfs'
+import { shuffle } from './util'
 
 function buildMetadata(csvRecord: any, imagesIpfsHash: string, imagesPath: string): any {
   return {
@@ -14,19 +15,6 @@ function buildMetadata(csvRecord: any, imagesIpfsHash: string, imagesPath: strin
       .splice(3)
       .map((a: string) => ({ trait_type: a.split(':')[0].trim(), value: a.split(':')[1].trim() })),
   }
-}
-
-function shuffle<T>(arr: T[]): T[] {
-  // Fisher-Yates shuffle
-  for (let i = arr.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1))
-
-    const temp = arr[i]
-    arr[i] = arr[j]
-    arr[j] = temp
-  }
-
-  return arr
 }
 
 async function main() {

@@ -32,7 +32,7 @@ npx hardhat test
 Run this command:
 
 ```shell
-npx hardhat run scripts/generate.ts
+npx hardhat run scripts/01-generate-metadata.ts
 ```
 
 This command will do several actions:

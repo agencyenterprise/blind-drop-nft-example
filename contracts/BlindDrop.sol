@@ -21,10 +21,10 @@ contract BlindDrop is ERC721, ERC721Enumerable, Ownable {
     event Revealed(string baseURI);
 
     Counters.Counter private _tokenIdCounter;
-    string private _baseURIValue;
-    SalePhase private _phase = SalePhase.NotStarted;
-    bytes32 private _presaleMerkleRoot;
 
+    string public baseURI;
+    SalePhase public phase = SalePhase.NotStarted;
+    bytes32 public presaleMerkleRoot;
     uint256 public maxSupply;
     uint256 public maxPurchase;
     uint256 public price = 80000000000000000; //0.08 ETH
@@ -37,22 +37,22 @@ contract BlindDrop is ERC721, ERC721Enumerable, Ownable {
         price = _price;
     }
 
-    function changePhase(SalePhase phase) public onlyOwner {
-        emit PhaseChanged(_phase, phase);
+    function changePhase(SalePhase _phase) public onlyOwner {
+        emit PhaseChanged(phase, _phase);
 
-        _phase = phase;
+        phase = _phase;
     }
 
-    function setPresaleMerkleRoot(bytes32 root) public onlyOwner {
-        emit PresaleMerkleRootChanged(_presaleMerkleRoot, root);
+    function setPresaleMerkleRoot(bytes32 _root) public onlyOwner {
+        emit PresaleMerkleRootChanged(presaleMerkleRoot, _root);
 
-        _presaleMerkleRoot = root; 
+        presaleMerkleRoot = _root; 
     }
 
-    function reveal(string memory baseURIValue) public onlyOwner {
-        emit Revealed(baseURIValue);
+    function reveal(string memory _baseURIValue) public onlyOwner {
+        emit Revealed(_baseURIValue);
 
-        _baseURIValue = baseURIValue;
+        baseURI = _baseURIValue;
     }
 
     function withdraw() public onlyOwner {
@@ -64,13 +64,13 @@ contract BlindDrop is ERC721, ERC721Enumerable, Ownable {
     }
 
     function claim(uint256 quantity, bytes32[] memory proof) public payable {
-        require(_phase != SalePhase.NotStarted, 'Sale is not open');
+        require(phase != SalePhase.NotStarted, 'Sale is not open');
         require(quantity > 0 && quantity <= maxPurchase, "Quantity exceeds number of tokens per transaction");
         require(_tokenIdCounter.current() + quantity <= maxSupply, "Not enough lazy minted tokens");
         require(msg.value >= price * quantity, "Amount of ether sent is not correct");
         
-        if (_phase == SalePhase.PreSale) {
-            require(MerkleProof.verify(proof, _presaleMerkleRoot, keccak256(abi.encodePacked(msg.sender))), "Not in presale whitelist");
+        if (phase == SalePhase.PreSale) {
+            require(MerkleProof.verify(proof, presaleMerkleRoot, keccak256(abi.encodePacked(msg.sender))), "Not in presale whitelist");
         }
 
         for(uint256 i = 0; i < quantity; i++) { 
@@ -81,7 +81,7 @@ contract BlindDrop is ERC721, ERC721Enumerable, Ownable {
     }
 
     function _baseURI() internal view override returns (string memory) {
-        return _baseURIValue;
+        return baseURI;
     }
 
     // The following functions are overrides required by Solidity.

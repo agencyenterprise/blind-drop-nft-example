@@ -8,6 +8,7 @@ describe('BlindDrop', function () {
   async function deployNftFixture() {
     const name = 'TestDrop'
     const symbol = 'TSD'
+    const contractLevelMetadataURI = '0123'
     const provenanceHash = 'd48783479c5fcc13fbd28099ef2c060d8394e26d0a58d29be0fbcb35f83444a2'
     const maxSupply = 20
     const maxPurchase = 5
@@ -20,7 +21,7 @@ describe('BlindDrop', function () {
     const presaleMerkleTree = new MerkleTree(leaves, keccak256, { sort: true })
 
     const Nft = await ethers.getContractFactory('BlindDrop')
-    const nft = await Nft.deploy(name, symbol, provenanceHash, maxSupply, maxPurchase, priceInWei)
+    const nft = await Nft.deploy(name, symbol, contractLevelMetadataURI, maxSupply, maxPurchase, priceInWei)
 
     await nft.setPresaleMerkleRoot(presaleMerkleTree.getHexRoot())
 
@@ -32,6 +33,7 @@ describe('BlindDrop', function () {
       bob,
       name,
       symbol,
+      contractLevelMetadataURI,
       provenanceHash,
       maxSupply,
       maxPurchase,
@@ -49,13 +51,13 @@ describe('BlindDrop', function () {
     })
 
     it('Should set the right data', async function () {
-      const { nft, name, symbol, provenanceHash, maxSupply, maxPurchase, priceInWei } = await loadFixture(
+      const { nft, name, symbol, contractLevelMetadataURI, maxSupply, maxPurchase, priceInWei } = await loadFixture(
         deployNftFixture,
       )
 
       expect(await nft.name()).to.equal(name)
       expect(await nft.symbol()).to.equal(symbol)
-      expect(await nft.provenanceHash()).to.equal(provenanceHash)
+      expect(await nft.contractURI()).to.equal(contractLevelMetadataURI)
       expect(await nft.maxSupply()).to.equal(maxSupply)
       expect(await nft.maxPurchase()).to.equal(maxPurchase)
       expect(await nft.price()).to.equal(priceInWei)
@@ -178,12 +180,12 @@ describe('BlindDrop', function () {
 
     it('After reveal should have metadata', async function () {
       // Arrange
-      const { nft, baseURI } = await loadFixture(deployNftFixture)
+      const { nft, baseURI, provenanceHash } = await loadFixture(deployNftFixture)
       await nft.changePhase(2)
       await nft.claim(2, [], { value: 160000000000000000n })
 
       // Act
-      await nft.reveal(baseURI)
+      await nft.reveal(baseURI, provenanceHash)
 
       // Assert
       expect(await nft.tokenURI(0)).to.equal(`${baseURI}0`)

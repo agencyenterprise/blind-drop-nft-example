@@ -18,7 +18,7 @@ contract BlindDrop is ERC721, ERC721Enumerable, Ownable {
 
     event PhaseChanged(SalePhase previousPhase, SalePhase newPhase);
     event PresaleMerkleRootChanged(bytes32 previousRoot, bytes32 newRoot);
-    event Revealed(string baseURI);
+    event Revealed(string baseURI, string _provenanceHash);
 
     Counters.Counter private _tokenIdCounter;
 
@@ -31,9 +31,8 @@ contract BlindDrop is ERC721, ERC721Enumerable, Ownable {
     uint256 public price = 80000000000000000; //0.08 ETH
     string public provenanceHash = "";
 
-    constructor(string memory _name, string memory _symbol, string memory _contractLevelMetadataURIValue, string memory _provenanceHash, uint256 _maxSupply, uint256 _maxPurchase, uint256 _price) ERC721(_name, _symbol) {
+    constructor(string memory _name, string memory _symbol, string memory _contractLevelMetadataURIValue, uint256 _maxSupply, uint256 _maxPurchase, uint256 _price) ERC721(_name, _symbol) {
         _contractLevelMetadataURI = _contractLevelMetadataURIValue;
-        provenanceHash = _provenanceHash;
         maxSupply = _maxSupply;
         maxPurchase = _maxPurchase;
         price = _price;
@@ -51,10 +50,11 @@ contract BlindDrop is ERC721, ERC721Enumerable, Ownable {
         presaleMerkleRoot = _root; 
     }
 
-    function reveal(string memory _baseURIValue) public onlyOwner {
-        emit Revealed(_baseURIValue);
+    function reveal(string memory _baseURIValue, string memory _provenanceHash) public onlyOwner {
+        emit Revealed(_baseURIValue, _provenanceHash);
 
         baseURI = _baseURIValue;
+        provenanceHash = _provenanceHash;
     }
 
     function withdraw() public onlyOwner {

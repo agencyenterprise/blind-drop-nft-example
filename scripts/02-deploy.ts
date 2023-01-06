@@ -21,7 +21,6 @@ async function main() {
   const description = 'TestDrop NFT description'
   const symbol = 'TSD'
   const contractLevelMetadata = buildContractLevelMetadata(name, description)
-  const provenanceHash = 'd48783479c5fcc13fbd28099ef2c060d8394e26d0a58d29be0fbcb35f83444a2'
   const maxSupply = 5
   const maxPurchase = 2
   const priceInWei = '80000000000000000'
@@ -29,15 +28,7 @@ async function main() {
   console.log('Deploying contract...')
 
   const Contract = (await ethers.getContractFactory('BlindDrop')) as ContractFactory
-  const contract = await Contract.deploy(
-    name,
-    symbol,
-    contractLevelMetadata,
-    provenanceHash,
-    maxSupply,
-    maxPurchase,
-    priceInWei,
-  )
+  const contract = await Contract.deploy(name, symbol, contractLevelMetadata, maxSupply, maxPurchase, priceInWei)
 
   await contract.deployed()
 

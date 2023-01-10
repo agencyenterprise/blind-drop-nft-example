@@ -17,7 +17,7 @@ contract BlindDrop is ERC721, ERC721Enumerable, Ownable {
     }
 
     event PhaseChanged(SalePhase previousPhase, SalePhase newPhase);
-    event PresaleMerkleRootChanged(bytes32 previousRoot, bytes32 newRoot);
+    event AllowListMerkleRootChanged(bytes32 previousRoot, bytes32 newRoot);
     event Revealed(string baseURI, string _provenanceHash);
 
     Counters.Counter private _tokenIdCounter;
@@ -25,17 +25,18 @@ contract BlindDrop is ERC721, ERC721Enumerable, Ownable {
     string private _contractLevelMetadataURI;
     string public baseURI;
     SalePhase public phase = SalePhase.NotStarted;
-    bytes32 public presaleMerkleRoot;
+    bytes32 public allowListMerkleRoot;
     uint256 public maxSupply;
     uint256 public maxPurchase;
     uint256 public price = 80000000000000000; //0.08 ETH
     string public provenanceHash = "";
 
-    constructor(string memory _name, string memory _symbol, string memory _contractLevelMetadataURIValue, uint256 _maxSupply, uint256 _maxPurchase, uint256 _price) ERC721(_name, _symbol) {
+    constructor(string memory _name, string memory _symbol, string memory _contractLevelMetadataURIValue, uint256 _maxSupply, uint256 _maxPurchase, uint256 _price, bytes32 _allowListMerkleRoot) ERC721(_name, _symbol) {
         _contractLevelMetadataURI = _contractLevelMetadataURIValue;
         maxSupply = _maxSupply;
         maxPurchase = _maxPurchase;
         price = _price;
+        allowListMerkleRoot = _allowListMerkleRoot;
     }
 
     function changePhase(SalePhase _phase) public onlyOwner {
@@ -44,10 +45,10 @@ contract BlindDrop is ERC721, ERC721Enumerable, Ownable {
         phase = _phase;
     }
 
-    function setPresaleMerkleRoot(bytes32 _root) public onlyOwner {
-        emit PresaleMerkleRootChanged(presaleMerkleRoot, _root);
+    function setAllowListMerkleRoot(bytes32 _root) public onlyOwner {
+        emit AllowListMerkleRootChanged(allowListMerkleRoot, _root);
 
-        presaleMerkleRoot = _root; 
+        allowListMerkleRoot = _root; 
     }
 
     function reveal(string memory _baseURIValue, string memory _provenanceHash) public onlyOwner {
@@ -72,7 +73,7 @@ contract BlindDrop is ERC721, ERC721Enumerable, Ownable {
         require(msg.value >= price * quantity, "Amount of ether sent is not correct");
         
         if (phase == SalePhase.PreSale) {
-            require(MerkleProof.verify(proof, presaleMerkleRoot, keccak256(abi.encodePacked(msg.sender))), "Not in presale whitelist");
+            require(MerkleProof.verify(proof, allowListMerkleRoot, keccak256(abi.encodePacked(msg.sender))), "Not in allow list");
         }
 
         for(uint256 i = 0; i < quantity; i++) { 

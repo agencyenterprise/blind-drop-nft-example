@@ -1,7 +1,7 @@
 import { MerkleTree } from 'merkletreejs'
 import keccak256 from 'keccak256'
 
-describe.only('Merkle tree', function () {
+describe('Merkle tree', function () {
   it('Number of proofs', async function () {
     const leaves = [...Array(10000).keys()].map((a) => keccak256(`Account_${a}`))
     const merkleTree = new MerkleTree(leaves, keccak256, { sort: true })

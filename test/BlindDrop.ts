@@ -18,12 +18,18 @@ describe('BlindDrop', function () {
     const [owner, otherAccount, alice, bob, charlie] = await ethers.getSigners()
 
     const leaves = [alice.address, bob.address, charlie.address].map((a) => keccak256(a))
-    const presaleMerkleTree = new MerkleTree(leaves, keccak256, { sort: true })
+    const allowListMerkleTree = new MerkleTree(leaves, keccak256, { sort: true })
 
     const Nft = await ethers.getContractFactory('BlindDrop')
-    const nft = await Nft.deploy(name, symbol, contractLevelMetadataURI, maxSupply, maxPurchase, priceInWei)
-
-    await nft.setPresaleMerkleRoot(presaleMerkleTree.getHexRoot())
+    const nft = await Nft.deploy(
+      name,
+      symbol,
+      contractLevelMetadataURI,
+      maxSupply,
+      maxPurchase,
+      priceInWei,
+      allowListMerkleTree.getHexRoot(),
+    )
 
     return {
       nft,
@@ -39,7 +45,7 @@ describe('BlindDrop', function () {
       maxPurchase,
       priceInWei,
       baseURI,
-      presaleMerkleTree,
+      allowListMerkleTree,
     }
   }
 
@@ -81,23 +87,23 @@ describe('BlindDrop', function () {
   })
 
   describe('PreSale phase', function () {
-    it('Account not in whitelist should not claim NFTs in pre sale phase', async function () {
+    it('Account not in allow list should not claim NFTs in pre sale phase', async function () {
       // Arrange
-      const { nft, otherAccount, presaleMerkleTree } = await loadFixture(deployNftFixture)
+      const { nft, otherAccount, allowListMerkleTree } = await loadFixture(deployNftFixture)
       await nft.changePhase(1)
-      const merkleProof = presaleMerkleTree.getHexProof(keccak256(otherAccount.address))
+      const merkleProof = allowListMerkleTree.getHexProof(keccak256(otherAccount.address))
 
       // Act & Assert
       await expect(nft.connect(otherAccount).claim(1, merkleProof, { value: 80000000000000000n })).to.be.revertedWith(
-        'Not in presale whitelist',
+        'Not in allow list',
       )
     })
 
-    it('Account in whitelist should claim NFTs in pre sale phase', async function () {
+    it('Account in allow list should claim NFTs in pre sale phase', async function () {
       // Arrange
-      const { nft, alice, presaleMerkleTree } = await loadFixture(deployNftFixture)
+      const { nft, alice, allowListMerkleTree } = await loadFixture(deployNftFixture)
       await nft.changePhase(1)
-      const merkleProof = presaleMerkleTree.getHexProof(keccak256(alice.address))
+      const merkleProof = allowListMerkleTree.getHexProof(keccak256(alice.address))
 
       // Act
       await expect(nft.connect(alice).claim(2, merkleProof, { value: 160000000000000000n })).not.to.be.reverted
@@ -110,7 +116,7 @@ describe('BlindDrop', function () {
   describe('PublicSale phase', function () {
     it('Any account should claim NFTs in public sale phase', async function () {
       // Arrange
-      const { nft, alice, bob, presaleMerkleTree } = await loadFixture(deployNftFixture)
+      const { nft, alice, bob } = await loadFixture(deployNftFixture)
       await nft.changePhase(2)
 
       // Act

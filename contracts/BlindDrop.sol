@@ -6,8 +6,10 @@ import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
 import '@openzeppelin/contracts/utils/cryptography/MerkleProof.sol';
+import '@openzeppelin/contracts/utils/Strings.sol';
 
 contract BlindDrop is ERC721, ERC721Enumerable, Ownable {
+    using Strings for uint256;
     using Counters for Counters.Counter;
 
     enum SalePhase {
@@ -24,7 +26,9 @@ contract BlindDrop is ERC721, ERC721Enumerable, Ownable {
 
     string private _contractLevelMetadataURI;
     string private _provenanceHash;
+
     string public baseURI;
+    string public placeholderURI;
     SalePhase public phase = SalePhase.NotStarted;
     bytes32 public allowListMerkleRoot;
     uint256 public maxSupply;
@@ -35,6 +39,7 @@ contract BlindDrop is ERC721, ERC721Enumerable, Ownable {
                 string memory _symbol,
                 string memory _contractLevelMetadataURIValue,
                 string memory _provenanceHashValue,
+                string memory _placeholderURI,
                 uint256 _maxSupply,
                 uint256 _maxPurchase,
                 uint256 _price,
@@ -43,6 +48,7 @@ contract BlindDrop is ERC721, ERC721Enumerable, Ownable {
         _contractLevelMetadataURI = _contractLevelMetadataURIValue;
         _provenanceHash = _provenanceHashValue;
 
+        placeholderURI = _placeholderURI;
         maxSupply = _maxSupply;
         maxPurchase = _maxPurchase;
         price = _price;
@@ -96,8 +102,11 @@ contract BlindDrop is ERC721, ERC721Enumerable, Ownable {
         return _contractLevelMetadataURI;
     }
 
-    function _baseURI() internal view override returns (string memory) {
-        return baseURI;
+    function tokenURI(uint256 tokenId) public view override returns (string memory) {
+        _requireMinted(tokenId);
+
+        string memory baseURIValue = baseURI;
+        return bytes(baseURIValue).length > 0 ? string(abi.encodePacked(baseURIValue, tokenId.toString())) : placeholderURI;
     }
 
     // The following functions are overrides required by Solidity.

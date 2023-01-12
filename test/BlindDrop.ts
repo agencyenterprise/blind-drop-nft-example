@@ -14,6 +14,7 @@ describe('BlindDrop', function () {
     const maxPurchase = 5
     const priceInWei = '80000000000000000'
     const baseURI = 'ipfs://QmVSft2Y6cjLkrYqL7MyABeikgKyp7ix3jRSrDtKVvJ38q/'
+    const placeholderURI = 'ipfs://QmX3bDzkvdHrAHG72YSXKFqGHTyujHk2hiUrFPXbpW7s4t'
 
     const [owner, otherAccount, alice, bob, charlie] = await ethers.getSigners()
 
@@ -26,6 +27,7 @@ describe('BlindDrop', function () {
       symbol,
       contractLevelMetadataURI,
       provenanceHash,
+      placeholderURI,
       maxSupply,
       maxPurchase,
       priceInWei,
@@ -46,6 +48,7 @@ describe('BlindDrop', function () {
       maxPurchase,
       priceInWei,
       baseURI,
+      placeholderURI,
       allowListMerkleTree,
     }
   }
@@ -175,17 +178,17 @@ describe('BlindDrop', function () {
   })
 
   describe('Reveal', function () {
-    it('Before reveal should not have metadata', async function () {
+    it('Before reveal should use placeholder metadata', async function () {
       // Arrange
       const { nft } = await loadFixture(deployNftFixture)
       await nft.changePhase(2)
       await nft.claim(1, [], { value: 80000000000000000n })
 
       // Assert
-      expect(await nft.tokenURI(0)).to.equal('')
+      expect(await nft.tokenURI(0)).to.equal('ipfs://QmX3bDzkvdHrAHG72YSXKFqGHTyujHk2hiUrFPXbpW7s4t')
     })
 
-    it('After reveal should have metadata', async function () {
+    it('After reveal should user base metadata', async function () {
       // Arrange
       const { nft, baseURI } = await loadFixture(deployNftFixture)
       await nft.changePhase(2)

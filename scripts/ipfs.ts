@@ -4,7 +4,7 @@ import axios from 'axios'
 import FormData from 'form-data'
 import streamBuffers from 'stream-buffers'
 
-const pinataApiUrl = 'https://api.pinata.cloud/pinning/pinFileToIPFS'
+const pinataApiUrl = 'https://api.pinata.cloud/pinning/'
 const pinataKey = process.env.PINATA_KEY
 const pinataSecret = process.env.PINATA_SECRET
 
@@ -39,7 +39,7 @@ const uploadFileToIPFS = async (stream: any, name?: any): Promise<string> => {
   const formData = new FormData()
   formData.append('file', stream, name)
 
-  const { data } = await axios.post(pinataApiUrl, formData, {
+  const { data } = await axios.post(pinataApiUrl + 'pinFileToIPFS', formData, {
     maxContentLength: Infinity,
     headers: {
       'Content-Type': `multipart/form-data; boundary=${formData.getBoundary()}`,
@@ -58,7 +58,7 @@ export const uploadTextFileToIPFS = async (text: string, fileName: string): Prom
 export async function uploadDirectoryToIPFS(folderPath: string, folderNameOnIpfs: string): Promise<string> {
   const formData = await createFileFormData(folderPath, folderNameOnIpfs)
 
-  const { data } = await axios.post(pinataApiUrl, formData, {
+  const { data } = await axios.post(pinataApiUrl + 'pinFileToIPFS', formData, {
     maxContentLength: Infinity,
     headers: {
       'Content-Type': `multipart/form-data; boundary=${formData.getBoundary()}`,
@@ -68,4 +68,13 @@ export async function uploadDirectoryToIPFS(folderPath: string, folderNameOnIpfs
   })
 
   return addIPFSPrefix(data.IpfsHash)
+}
+
+export async function removeFromIPFS(ipfsHash: string) {
+  await axios.delete(pinataApiUrl + 'unpin/' + ipfsHash, {
+    headers: {
+      pinata_api_key: pinataKey,
+      pinata_secret_api_key: pinataSecret,
+    },
+  })
 }

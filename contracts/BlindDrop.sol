@@ -6,8 +6,10 @@ import '@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol';
 import '@openzeppelin/contracts/access/Ownable.sol';
 import '@openzeppelin/contracts/utils/Counters.sol';
 import '@openzeppelin/contracts/utils/cryptography/EIP712.sol';
+import '@openzeppelin/contracts/utils/Strings.sol';
 
 contract BlindDrop is ERC721, ERC721Enumerable, EIP712, Ownable {
+    using Strings for uint256;
     using Counters for Counters.Counter;
 
     struct VoucherInfo {
@@ -26,19 +28,22 @@ contract BlindDrop is ERC721, ERC721Enumerable, EIP712, Ownable {
     }
 
     event PhaseChanged(SalePhase previousPhase, SalePhase newPhase);
-    event PresaleMerkleRootChanged(bytes32 previousRoot, bytes32 newRoot);
-    event Revealed(string baseURI, string _provenanceHash);
+    event AllowListMerkleRootChanged(bytes32 previousRoot, bytes32 newRoot);
+    event Revealed(string baseURI);
 
     Counters.Counter private _tokenIdCounter;
 
     string private _contractLevelMetadataURI;
+    string private _provenanceHash;
+
     string public baseURI;
+    string public placeholderURI;
     SalePhase public phase = SalePhase.NotStarted;
-    bytes32 public presaleMerkleRoot;
+    bytes32 public allowListMerkleRoot;
     uint256 public maxSupply;
     uint256 public maxPurchase;
     uint256 public price = 80000000000000000; //0.08 ETH
-    string public provenanceHash = '';
+
     mapping(address => bool) private _allowedMinters;
     mapping(address => uint256) private callerNonce;
 
@@ -46,17 +51,21 @@ contract BlindDrop is ERC721, ERC721Enumerable, EIP712, Ownable {
         string memory _name,
         string memory _symbol,
         string memory _contractLevelMetadataURIValue,
-        string memory _provenanceHash,
+        string memory _provenanceHashValue,
+        string memory _placeholderURI,
         uint256 _maxSupply,
         uint256 _maxPurchase,
         uint256 _price,
         address signer
     ) ERC721(_name, _symbol) EIP712(SIGNING_DOMAIN, SIGNATURE_VERSION) {
         _contractLevelMetadataURI = _contractLevelMetadataURIValue;
-        provenanceHash = _provenanceHash;
+        _provenanceHash = _provenanceHashValue;
+
+        placeholderURI = _placeholderURI;
         maxSupply = _maxSupply;
         maxPurchase = _maxPurchase;
         price = _price;
+
         _allowedMinters[signer] = true;
     }
 
@@ -74,17 +83,10 @@ contract BlindDrop is ERC721, ERC721Enumerable, EIP712, Ownable {
         phase = _phase;
     }
 
-    function setPresaleMerkleRoot(bytes32 _root) public onlyOwner {
-        emit PresaleMerkleRootChanged(presaleMerkleRoot, _root);
-
-        presaleMerkleRoot = _root;
-    }
-
-    function reveal(string memory _baseURIValue, string memory _provenanceHash) public onlyOwner {
-        emit Revealed(_baseURIValue, _provenanceHash);
+    function reveal(string memory _baseURIValue) public onlyOwner {
+        emit Revealed(_baseURIValue);
 
         baseURI = _baseURIValue;
-        provenanceHash = _provenanceHash;
     }
 
     function withdraw() public onlyOwner {
@@ -125,8 +127,11 @@ contract BlindDrop is ERC721, ERC721Enumerable, EIP712, Ownable {
         return _contractLevelMetadataURI;
     }
 
-    function _baseURI() internal view override returns (string memory) {
-        return baseURI;
+    function tokenURI(uint256 tokenId) public view override returns (string memory) {
+        _requireMinted(tokenId);
+
+        string memory baseURIValue = baseURI;
+        return bytes(baseURIValue).length > 0 ? string(abi.encodePacked(baseURIValue, tokenId.toString())) : placeholderURI;
     }
 
     // The following functions are overrides required by Solidity.

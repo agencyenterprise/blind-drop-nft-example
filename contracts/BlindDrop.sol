@@ -18,21 +18,31 @@ contract BlindDrop is ERC721, ERC721Enumerable, Ownable {
 
     event PhaseChanged(SalePhase previousPhase, SalePhase newPhase);
     event AllowListMerkleRootChanged(bytes32 previousRoot, bytes32 newRoot);
-    event Revealed(string baseURI, string _provenanceHash);
+    event Revealed(string baseURI);
 
     Counters.Counter private _tokenIdCounter;
 
     string private _contractLevelMetadataURI;
+    string private _provenanceHash;
     string public baseURI;
     SalePhase public phase = SalePhase.NotStarted;
     bytes32 public allowListMerkleRoot;
     uint256 public maxSupply;
     uint256 public maxPurchase;
     uint256 public price = 80000000000000000; //0.08 ETH
-    string public provenanceHash = "";
 
-    constructor(string memory _name, string memory _symbol, string memory _contractLevelMetadataURIValue, uint256 _maxSupply, uint256 _maxPurchase, uint256 _price, bytes32 _allowListMerkleRoot) ERC721(_name, _symbol) {
+    constructor(string memory _name,
+                string memory _symbol,
+                string memory _contractLevelMetadataURIValue,
+                string memory _provenanceHashValue,
+                uint256 _maxSupply,
+                uint256 _maxPurchase,
+                uint256 _price,
+                bytes32 _allowListMerkleRoot
+    ) ERC721(_name, _symbol) {
         _contractLevelMetadataURI = _contractLevelMetadataURIValue;
+        _provenanceHash = _provenanceHashValue;
+
         maxSupply = _maxSupply;
         maxPurchase = _maxPurchase;
         price = _price;
@@ -51,11 +61,10 @@ contract BlindDrop is ERC721, ERC721Enumerable, Ownable {
         allowListMerkleRoot = _root; 
     }
 
-    function reveal(string memory _baseURIValue, string memory _provenanceHash) public onlyOwner {
-        emit Revealed(_baseURIValue, _provenanceHash);
+    function reveal(string memory _baseURIValue) public onlyOwner {
+        emit Revealed(_baseURIValue);
 
         baseURI = _baseURIValue;
-        provenanceHash = _provenanceHash;
     }
 
     function withdraw() public onlyOwner {

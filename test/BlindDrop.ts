@@ -25,6 +25,7 @@ describe('BlindDrop', function () {
       name,
       symbol,
       contractLevelMetadataURI,
+      provenanceHash,
       maxSupply,
       maxPurchase,
       priceInWei,
@@ -186,12 +187,12 @@ describe('BlindDrop', function () {
 
     it('After reveal should have metadata', async function () {
       // Arrange
-      const { nft, baseURI, provenanceHash } = await loadFixture(deployNftFixture)
+      const { nft, baseURI } = await loadFixture(deployNftFixture)
       await nft.changePhase(2)
       await nft.claim(2, [], { value: 160000000000000000n })
 
       // Act
-      await nft.reveal(baseURI, provenanceHash)
+      await nft.reveal(baseURI)
 
       // Assert
       expect(await nft.tokenURI(0)).to.equal(`${baseURI}0`)

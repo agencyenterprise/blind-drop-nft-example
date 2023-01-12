@@ -25,23 +25,21 @@ async function main() {
   const imagesIpfsHash = await uploadDirectoryToIPFS(imagesPath, 'images')
   await removeFromIPFS(imagesIpfsHash.replace('ipfs://', ''))
 
-  console.log(imagesIpfsHash)
+  const csvFile = fs.readFileSync(csvPath)
+  const csvRecords = shuffle(parse(csvFile))
 
-  // const csvFile = fs.readFileSync(csvPath)
-  // const csvRecords = shuffle(parse(csvFile))
+  if (!fs.existsSync(metadatasPath)) {
+    fs.mkdirSync(metadatasPath)
+  }
 
-  // if (!fs.existsSync(metadatasPath)) {
-  //   fs.mkdirSync(metadatasPath)
-  // }
+  let provenance = ''
 
-  // let provenance = ''
+  for (let i = 0; i < csvRecords.length; i++) {
+    const metadata = buildMetadata(csvRecords[i], imagesIpfsHash)
+    provenance += textHash(JSON.stringify(metadata))
+  }
 
-  // for (let i = 0; i < csvRecords.length; i++) {
-  //   const metadata = buildMetadata(csvRecords[i], imagesIpfsHash)
-  //   provenance += textHash(JSON.stringify(metadata))
-  // }
-
-  // console.log(textHash(provenance))
+  console.log(textHash(provenance))
 }
 
 main().catch((error) => {

@@ -24,6 +24,7 @@ async function main() {
   const maxSupply = 5
   const maxPurchase = 2
   const priceInWei = '80000000000000000'
+  const signer = '0xB6CaADD1fE83ADBBac625b398F6F68119A2ea347'
 
   console.log('Deploying contract...')
 

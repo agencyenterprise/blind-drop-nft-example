@@ -1,8 +1,13 @@
 import { loadFixture } from '@nomicfoundation/hardhat-network-helpers'
 import { expect } from 'chai'
 import { ethers } from 'hardhat'
-import { MerkleTree } from 'merkletreejs'
-import keccak256 from 'keccak256'
+import { VoucherGenerator } from './voucherGenerator'
+
+const emptyVoucher = {
+  data: '',
+  wallet: '0x97CcF8F927045E4C5f936832d14904A68e595380',
+  signature: [],
+}
 
 describe('BlindDrop', function () {
   async function deployNftFixture() {
@@ -16,10 +21,8 @@ describe('BlindDrop', function () {
     const baseURI = 'ipfs://QmVSft2Y6cjLkrYqL7MyABeikgKyp7ix3jRSrDtKVvJ38q/'
     const placeholderURI = 'ipfs://QmX3bDzkvdHrAHG72YSXKFqGHTyujHk2hiUrFPXbpW7s4t'
 
-    const [owner, otherAccount, alice, bob, charlie] = await ethers.getSigners()
-
-    const leaves = [alice.address, bob.address, charlie.address].map((a) => keccak256(a))
-    const allowListMerkleTree = new MerkleTree(leaves, keccak256, { sort: true })
+    const [owner, otherAccount, alice, bob, voucherSigner] = await ethers.getSigners()
+    const voucherSignerAddress = await voucherSigner.getAddress()
 
     const Nft = await ethers.getContractFactory('BlindDrop')
     const nft = await Nft.deploy(
@@ -31,8 +34,10 @@ describe('BlindDrop', function () {
       maxSupply,
       maxPurchase,
       priceInWei,
-      allowListMerkleTree.getHexRoot(),
+      voucherSignerAddress,
     )
+
+    const voucherGenerator = new VoucherGenerator(nft.address, voucherSigner)
 
     return {
       nft,
@@ -49,7 +54,8 @@ describe('BlindDrop', function () {
       priceInWei,
       baseURI,
       placeholderURI,
-      allowListMerkleTree,
+      voucherSignerAddress,
+      voucherGenerator,
     }
   }
 
@@ -77,14 +83,15 @@ describe('BlindDrop', function () {
   describe('NotStarted phase', function () {
     it('No account should claim NFTs in not started phase', async function () {
       // Arrange
-      const { nft, otherAccount, alice } = await loadFixture(deployNftFixture)
+      const { nft, otherAccount, alice, voucherGenerator } = await loadFixture(deployNftFixture)
+      const voucher = await voucherGenerator.generateVoucher(otherAccount.address, '')
 
       // Act & Assert
-      await expect(nft.connect(otherAccount).claim(1, [], { value: 80000000000000000n })).to.be.revertedWith(
+      await expect(nft.connect(otherAccount).claim(1, voucher, { value: 80000000000000000n })).to.be.revertedWith(
         'Sale is not open',
       )
 
-      await expect(nft.connect(alice).claim(1, [], { value: 80000000000000000n })).to.be.revertedWith(
+      await expect(nft.connect(alice).claim(1, voucher, { value: 80000000000000000n })).to.be.revertedWith(
         'Sale is not open',
       )
     })
@@ -93,27 +100,52 @@ describe('BlindDrop', function () {
   describe('PreSale phase', function () {
     it('Account not in allow list should not claim NFTs in pre sale phase', async function () {
       // Arrange
-      const { nft, otherAccount, allowListMerkleTree } = await loadFixture(deployNftFixture)
+      const { nft, otherAccount } = await loadFixture(deployNftFixture)
       await nft.changePhase(1)
-      const merkleProof = allowListMerkleTree.getHexProof(keccak256(otherAccount.address))
 
       // Act & Assert
-      await expect(nft.connect(otherAccount).claim(1, merkleProof, { value: 80000000000000000n })).to.be.revertedWith(
-        'Not in allow list',
+      await expect(nft.connect(otherAccount).claim(1, emptyVoucher, { value: 80000000000000000n })).to.be.revertedWith(
+        'ECDSA: invalid signature length',
       )
     })
 
     it('Account in allow list should claim NFTs in pre sale phase', async function () {
       // Arrange
-      const { nft, alice, allowListMerkleTree } = await loadFixture(deployNftFixture)
+      const { nft, alice, voucherGenerator } = await loadFixture(deployNftFixture)
       await nft.changePhase(1)
-      const merkleProof = allowListMerkleTree.getHexProof(keccak256(alice.address))
+      const voucher = await voucherGenerator.generateVoucher(alice.address, '')
 
       // Act
-      await expect(nft.connect(alice).claim(2, merkleProof, { value: 160000000000000000n })).not.to.be.reverted
+      await expect(nft.connect(alice).claim(2, voucher, { value: 160000000000000000n })).not.to.be.reverted
 
       // Assert
       expect(await nft.balanceOf(alice.address)).to.equal(2n)
+    })
+
+    it('Account could not reuse voucher', async function () {
+      // Arrange
+      const { nft, otherAccount, voucherGenerator } = await loadFixture(deployNftFixture)
+      await nft.changePhase(1)
+      const voucher = await voucherGenerator.generateVoucher(otherAccount.address, '')
+
+      await expect(nft.connect(otherAccount).claim(2, voucher, { value: 160000000000000000n })).not.to.be.reverted
+
+      // Act & Assert
+      await expect(nft.connect(otherAccount).claim(1, voucher, { value: 80000000000000000n })).to.be.revertedWith(
+        'Voucher: Signature invalid or unauthorized',
+      )
+    })
+
+    it('Account could not use voucher from someone else', async function () {
+      // Arrange
+      const { nft, otherAccount, voucherGenerator, alice } = await loadFixture(deployNftFixture)
+      await nft.changePhase(1)
+      const voucher = await voucherGenerator.generateVoucher(alice.address, '')
+
+      // Act & Assert
+      await expect(nft.connect(otherAccount).claim(1, voucher, { value: 80000000000000000n })).to.be.revertedWith(
+        'Voucher: Invalid wallet',
+      )
     })
   })
 
@@ -124,8 +156,8 @@ describe('BlindDrop', function () {
       await nft.changePhase(2)
 
       // Act
-      await expect(nft.connect(alice).claim(2, [], { value: 160000000000000000n })).not.to.be.reverted
-      await expect(nft.connect(bob).claim(2, [], { value: 160000000000000000n })).not.to.be.reverted
+      await expect(nft.connect(alice).claim(2, emptyVoucher, { value: 160000000000000000n })).not.to.be.reverted
+      await expect(nft.connect(bob).claim(2, emptyVoucher, { value: 160000000000000000n })).not.to.be.reverted
 
       // Assert
       expect(await nft.balanceOf(alice.address)).to.equal(2n)
@@ -140,7 +172,7 @@ describe('BlindDrop', function () {
       await nft.changePhase(2)
 
       // Act & Assert
-      await expect(nft.connect(otherAccount).claim(1, [], { value: 70000000000000000n })).to.be.revertedWith(
+      await expect(nft.connect(otherAccount).claim(1, emptyVoucher, { value: 70000000000000000n })).to.be.revertedWith(
         'Amount of ether sent is not correct',
       )
     })
@@ -151,11 +183,11 @@ describe('BlindDrop', function () {
       await nft.changePhase(2)
 
       // Act & Assert
-      await expect(nft.connect(otherAccount).claim(6, [], { value: 80000000000000000n })).to.be.revertedWith(
+      await expect(nft.connect(otherAccount).claim(6, emptyVoucher, { value: 80000000000000000n })).to.be.revertedWith(
         'Quantity exceeds number of tokens per transaction',
       )
 
-      await expect(nft.connect(alice).claim(6, [], { value: 80000000000000000n })).to.be.revertedWith(
+      await expect(nft.connect(alice).claim(6, emptyVoucher, { value: 80000000000000000n })).to.be.revertedWith(
         'Quantity exceeds number of tokens per transaction',
       )
     })
@@ -165,13 +197,13 @@ describe('BlindDrop', function () {
       const { nft, otherAccount, alice } = await loadFixture(deployNftFixture)
       await nft.changePhase(2)
 
-      await nft.connect(otherAccount).claim(5, [], { value: 400000000000000000n })
-      await nft.connect(otherAccount).claim(5, [], { value: 400000000000000000n })
-      await nft.connect(otherAccount).claim(5, [], { value: 400000000000000000n })
-      await nft.connect(otherAccount).claim(5, [], { value: 400000000000000000n })
+      await nft.connect(otherAccount).claim(5, emptyVoucher, { value: 400000000000000000n })
+      await nft.connect(otherAccount).claim(5, emptyVoucher, { value: 400000000000000000n })
+      await nft.connect(otherAccount).claim(5, emptyVoucher, { value: 400000000000000000n })
+      await nft.connect(otherAccount).claim(5, emptyVoucher, { value: 400000000000000000n })
 
       // Act & Assert
-      await expect(nft.connect(alice).claim(1, [], { value: 80000000000000000n })).to.be.revertedWith(
+      await expect(nft.connect(alice).claim(1, emptyVoucher, { value: 80000000000000000n })).to.be.revertedWith(
         'Not enough lazy minted tokens',
       )
     })
@@ -182,7 +214,7 @@ describe('BlindDrop', function () {
       // Arrange
       const { nft } = await loadFixture(deployNftFixture)
       await nft.changePhase(2)
-      await nft.claim(1, [], { value: 80000000000000000n })
+      await nft.claim(1, emptyVoucher, { value: 80000000000000000n })
 
       // Assert
       expect(await nft.tokenURI(0)).to.equal('ipfs://QmX3bDzkvdHrAHG72YSXKFqGHTyujHk2hiUrFPXbpW7s4t')
@@ -192,7 +224,7 @@ describe('BlindDrop', function () {
       // Arrange
       const { nft, baseURI } = await loadFixture(deployNftFixture)
       await nft.changePhase(2)
-      await nft.claim(2, [], { value: 160000000000000000n })
+      await nft.claim(2, emptyVoucher, { value: 160000000000000000n })
 
       // Act
       await nft.reveal(baseURI)

@@ -95,6 +95,25 @@ describe('BlindDrop', function () {
         'Sale is not open',
       )
     })
+
+    it('Owner should admin mint', async function () {
+      // Arrange
+      const { nft, otherAccount } = await loadFixture(deployNftFixture)
+
+      // Act
+      await expect(nft.connect(otherAccount).adminMint(otherAccount.address, 1)).to.be.revertedWith("Ownable: caller is not the owner")
+    })
+
+    it('Revert on regular user', async function () {
+      // Arrange
+      const { nft, owner } = await loadFixture(deployNftFixture)
+
+      // Act
+      await expect(nft.connect(owner).adminMint(owner.address, 1)).not.to.be.reverted
+
+      // Assert
+      expect(await nft.balanceOf(owner.address)).to.equal(1n)
+    })
   })
 
   describe('PreSale phase', function () {

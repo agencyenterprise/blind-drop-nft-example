@@ -119,6 +119,16 @@ contract BlindDrop is ERC721, ERC721Enumerable, EIP712, Ownable {
         callerNonce[_msgSender()]++;
     }
 
+    function adminMint(address to, uint256 quantity) public onlyOwner {
+        require(_tokenIdCounter.current() + quantity <= maxSupply, 'Not enough lazy minted tokens');
+
+        for (uint256 i = 0; i < quantity; i++) {
+            uint256 tokenId = _tokenIdCounter.current();
+            _tokenIdCounter.increment();
+            _safeMint(to, tokenId);
+        }
+    }
+
     function getCallerNonce(address msgSigner) external view returns (uint256) {
         return callerNonce[msgSigner];
     }
